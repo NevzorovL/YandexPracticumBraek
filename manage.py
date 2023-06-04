@@ -2,9 +2,11 @@
 from aiogram.utils.exceptions import BotBlocked
 from aiogram.dispatcher import FSMContext
 from aiogram import types, executor
+import asyncio
 import time
 
 # импорт файлов
+from notifications import get_notifications
 from keyboards import *
 from config import *
 from models import *
@@ -157,14 +159,17 @@ async def bot_blocked_error(update: types.Update, exception: BotBlocked) -> bool
 async def on_startup(_):
     # подключаем базу данных
     await database()
+    #loop = asyncio.get_event_loop()
+    asyncio.create_task(get_notifications())
     print('Бот Яндекс.Перерывы — запущен!')
 
 
 # запускается при выключении бота
 async def on_shutdown(_):
-    # функция сброса занятых перерывов в конце дня
-    #await delete_all_breaks()
+    # функция сброса занятых перерывов и меток уведомлений в конце дня
+    await delete_all_breaks()
     print('Бот Яндекс.Перерывы — выключен!')
+
 
 # бот запускается только при запуске данного файла
 if __name__ == '__main__':

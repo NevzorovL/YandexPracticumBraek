@@ -25,7 +25,7 @@ async def database():
     # если ранее база не была создана, то создаем ее
     cur.execute(
         'CREATE TABLE IF NOT EXISTS '
-        'users(id VARCHAR PRIMARY KEY, name TEXT, role TEXT, break_from INTEGER, break_to INTEGER)'
+        'users(id VARCHAR PRIMARY KEY, name TEXT, role TEXT, break_from INTEGER, break_to INTEGER, notification INTEGER)'
     )
     db.commit()
 
@@ -49,7 +49,7 @@ async def find_user(user_id):
 
 
 # функция добавления пользователя в базу данных
-async def add_user(user_id, name, role, break_from=0, break_to=0):
+async def add_user(user_id, name, role, break_from=0, break_to=0, notification=0):
     # ищем пользователя по его уникальному id
     user = cur.execute(
         "SELECT id FROM users WHERE id = '{id}'".format(
@@ -58,8 +58,8 @@ async def add_user(user_id, name, role, break_from=0, break_to=0):
     # если пользователя нет в базе, заносим данные о нем
     if not user:
         cur.execute(
-            "INSERT INTO users VALUES('{id}', '{name}', '{role}', '{break_from}', '{break_to}')".format(
-                id=user_id, name=name, role=role, break_from=break_from, break_to=break_to)
+            "INSERT INTO users VALUES('{id}', '{name}', '{role}', '{break_from}', '{break_to}', '{notification}')".format(
+                id=user_id, name=name, role=role, break_from=break_from, break_to=break_to, notification=notification)
         )
         db.commit()
     # обработчик ошибок для админа
@@ -123,7 +123,7 @@ async def delete_break(user_id):
     # если пользователь не брал перерыв ранее
     if user_break != (0,):
         cur.execute(
-            "UPDATE users SET break_from = 0, break_to = 0 WHERE id = '{id}'".format(
+            "UPDATE users SET break_from = 0, break_to = 0, notification = 0 WHERE id = '{id}'".format(
             id=user_id)
         )
         db.commit()
@@ -201,7 +201,26 @@ async def who_on_break():
 # функция сброса занятых перерывов в конце дня
 async def delete_all_breaks():
     cur.execute(
-        "UPDATE users SET break_from = 0, break_to = 0"
+        "UPDATE users SET break_from = 0, break_to = 0, notification = 0"
+    )
+    db.commit()
+
+
+# функция вывода id, времени и меток перерывов о всех пользователях для работы уведомлений
+async def get_information_about_users():
+    information = cur.execute(
+        "SELECT id, break_from, notification FROM users WHERE break_from > 0"
+    ).fetchall()
+
+    return information
+
+
+# метка о пришедшем уведомлении
+async def notification_received(user_id):
+    cur.execute(
+        "UPDATE users SET notification = 1 WHERE id = '{id}'".format(
+            id=user_id
+        )
     )
     db.commit()
 
